@@ -27,7 +27,7 @@ namespace ScoreSys.Api.Controllers
             return new List<ScoreView>();
         }
 
-        [HttpPost]
+        [HttpPost("{gameId}")]
         public IActionResult Post(Guid gameId, ScorePost score)
         {
             _publisher.Publish(new ScoreView()
