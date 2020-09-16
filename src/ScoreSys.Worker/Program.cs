@@ -1,7 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -19,14 +17,17 @@ namespace ScoreSys.Worker
             Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
-                    services.AddHostedService<Worker>(s => 
+                    var config = new ConfigurationBuilder().AddJsonFile("appsettings.json", false, false).Build();
+                    var contextBuilder = new DbContextOptionsBuilder();
+                    contextBuilder.UseSqlServer(config["SqlConnection"]);
+                    services.AddHostedService<Worker>(s =>
                     new Worker(
                         s.GetRequiredService<ILogger<Worker>>(),
-                        "localhost",
-                        "guest",
-                        "guest",
-                        string.Empty,
-                        "score-sys"));
+                        contextBuilder.Options,
+                        config["RabbitMQ::host"],
+                        config["RabbitMQ::username"],
+                        config["RabbitMQ::password"],
+                        config["RabbitMQ::exchange"]));
                 });
     }
 }

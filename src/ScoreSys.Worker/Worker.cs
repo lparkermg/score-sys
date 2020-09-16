@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
@@ -17,8 +18,9 @@ namespace ScoreSys.Worker
         private readonly string _exchangeName;
         private readonly ConnectionFactory _factory;
         private readonly IConnection _connection;
+        private readonly DbContextOptions _contextOptions;
 
-        public Worker(ILogger<Worker> logger, string hostName, string username, string password, string vHost, string exchangeName)
+        public Worker(ILogger<Worker> logger, DbContextOptions contextOptions, string hostName, string username, string password, string exchangeName)
         {
             _logger = logger;
             _exchangeName = exchangeName;
@@ -29,6 +31,7 @@ namespace ScoreSys.Worker
                 Password = password,
             };
             _connection = _factory.CreateConnection();
+            _contextOptions = contextOptions;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -61,11 +64,19 @@ namespace ScoreSys.Worker
             });
         }
 
-        private void EventReceived(object sender, BasicDeliverEventArgs e)
+        private async void EventReceived(object sender, BasicDeliverEventArgs e)
         {
             var rawBody = e.Body.ToArray();
             var body = ScoreViewExtenstions.BytesToScoreView(rawBody);
-            _logger.LogInformation($"{body.Name} - {body.Score}");
+            using (var context = new ScoreViewContext(_contextOptions))
+            using (var transaction = await context.Database.BeginTransactionAsync())
+            {
+                await context.Scores.AddAsync(body);
+                await context.SaveChangesAsync();
+                transaction.Commit();
+                context.Dispose();
+            }
+            _logger.LogDebug($"Score {body.Id} submitted successfully.");
         }
     }
 }
