@@ -24,10 +24,10 @@ namespace ScoreSys.Worker
                     new Worker(
                         s.GetRequiredService<ILogger<Worker>>(),
                         contextBuilder.Options,
-                        config["RabbitMQ::host"],
-                        config["RabbitMQ::username"],
-                        config["RabbitMQ::password"],
-                        config["RabbitMQ::exchange"]));
+                        config["RabbitMQ:host"],
+                        config["RabbitMQ:username"],
+                        config["RabbitMQ:password"],
+                        config["RabbitMQ:exchange"]));
                 });
     }
 }
