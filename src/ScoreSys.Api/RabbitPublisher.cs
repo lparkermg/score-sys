@@ -10,7 +10,7 @@ namespace ScoreSys.Api
         private readonly string _exchangeName;
         private readonly ConnectionFactory _factory;
         private IConnection _connection;
-        public RabbitPublisher(string hostName, string username, string password, string vHost, string exchangeName)
+        public RabbitPublisher(string hostName, string username, string password, string exchangeName)
         {
             _exchangeName = exchangeName;
             _factory = new ConnectionFactory() { 

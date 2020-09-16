@@ -14,17 +14,24 @@ namespace ScoreSys.Api.Controllers
     {
         private readonly ILogger<ScoreController> _logger;
         private readonly IPublisher<ScoreView> _publisher;
+        private readonly IQuery<ScoreView> _queryHandler;
 
-        public ScoreController(ILogger<ScoreController> logger, IPublisher<ScoreView> publisher)
+        public ScoreController(ILogger<ScoreController> logger, IPublisher<ScoreView> publisher, IQuery<ScoreView> queryHandler)
         {
             _logger = logger;
             _publisher = publisher;
+            _queryHandler = queryHandler;
         }
 
-        [HttpGet]
-        public IEnumerable<ScoreView> Get()
+        [HttpGet("{gameId}/top-{amount}")]
+        public async Task<IList<ScoreView>> GetTopTen(Guid gameId, int amount)
         {
-            return new List<ScoreView>();
+            if(amount <= 0)
+            {
+                return new List<ScoreView>();
+            }
+
+            return await _queryHandler.Get(gameId, amount, 0);
         }
 
         [HttpPost("{gameId}")]
