@@ -19,4 +19,10 @@
     <ProjectReference Include="..\ScoreSys.Entities\ScoreSys.Entities.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
