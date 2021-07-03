@@ -36,7 +36,7 @@ namespace ScoreSys.Api
                 config["RabbitMQ:username"],
                 config["RabbitMQ:password"],
                 config["RabbitMQ:exchange"]));
-            services.AddSingleton<IQuery<ScoreView>>(new SqlQueryService(contextBuilder.Options));
+            services.AddSingleton<IQuery<IList<ScoreView>>>(new ScoreSqlQueryService(contextBuilder.Options));
             services.AddControllers();
         }
 

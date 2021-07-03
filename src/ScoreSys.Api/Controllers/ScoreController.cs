@@ -15,9 +15,9 @@ namespace ScoreSys.Api.Controllers
     {
         private readonly ILogger<ScoreController> _logger;
         private readonly IPublisher<ScoreView> _publisher;
-        private readonly IQuery<ScoreView> _queryHandler;
+        private readonly IQuery<IList<ScoreView>> _queryHandler;
 
-        public ScoreController(ILogger<ScoreController> logger, IPublisher<ScoreView> publisher, IQuery<ScoreView> queryHandler)
+        public ScoreController(ILogger<ScoreController> logger, IPublisher<ScoreView> publisher, IQuery<IList<ScoreView>> queryHandler)
         {
             _logger = logger;
             _publisher = publisher;

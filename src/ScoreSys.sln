@@ -5,11 +5,13 @@ VisualStudioVersion = 16.0.30320.27
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScoreSys.Api", "ScoreSys.Api\ScoreSys.Api.csproj", "{3C023730-CA2E-404C-B8A6-F123178EA114}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScoreSys.Entities", "ScoreSys.Entities\ScoreSys.Entities.csproj", "{591659B4-A48F-4223-9AA2-D8BA77603A21}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScoreSys.Entities", "ScoreSys.Entities\ScoreSys.Entities.csproj", "{591659B4-A48F-4223-9AA2-D8BA77603A21}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScoreSys.Migrations", "ScoreSys.Migrations\ScoreSys.Migrations.csproj", "{EB1AE900-3114-469F-9565-B5BA458B9575}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScoreSys.Migrations", "ScoreSys.Migrations\ScoreSys.Migrations.csproj", "{EB1AE900-3114-469F-9565-B5BA458B9575}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScoreSys.Worker", "ScoreSys.Worker\ScoreSys.Worker.csproj", "{FDF82358-DA9A-4B74-94E6-3E4D15ACD7EE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScoreSys.Api.Tests", "ScoreSys.Api.Tests\ScoreSys.Api.Tests.csproj", "{0E8830C9-D828-4C2E-A00D-C7DA687B6A3B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -69,6 +71,18 @@ Global
 		{FDF82358-DA9A-4B74-94E6-3E4D15ACD7EE}.Release|x64.Build.0 = Release|Any CPU
 		{FDF82358-DA9A-4B74-94E6-3E4D15ACD7EE}.Release|x86.ActiveCfg = Release|Any CPU
 		{FDF82358-DA9A-4B74-94E6-3E4D15ACD7EE}.Release|x86.Build.0 = Release|Any CPU
+		{0E8830C9-D828-4C2E-A00D-C7DA687B6A3B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E8830C9-D828-4C2E-A00D-C7DA687B6A3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E8830C9-D828-4C2E-A00D-C7DA687B6A3B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0E8830C9-D828-4C2E-A00D-C7DA687B6A3B}.Debug|x64.Build.0 = Debug|Any CPU
+		{0E8830C9-D828-4C2E-A00D-C7DA687B6A3B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0E8830C9-D828-4C2E-A00D-C7DA687B6A3B}.Debug|x86.Build.0 = Debug|Any CPU
+		{0E8830C9-D828-4C2E-A00D-C7DA687B6A3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E8830C9-D828-4C2E-A00D-C7DA687B6A3B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E8830C9-D828-4C2E-A00D-C7DA687B6A3B}.Release|x64.ActiveCfg = Release|Any CPU
+		{0E8830C9-D828-4C2E-A00D-C7DA687B6A3B}.Release|x64.Build.0 = Release|Any CPU
+		{0E8830C9-D828-4C2E-A00D-C7DA687B6A3B}.Release|x86.ActiveCfg = Release|Any CPU
+		{0E8830C9-D828-4C2E-A00D-C7DA687B6A3B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
