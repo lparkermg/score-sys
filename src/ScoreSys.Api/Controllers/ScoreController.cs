@@ -8,6 +8,7 @@ using ScoreSys.Entities;
 
 namespace ScoreSys.Api.Controllers
 {
+    // TODO: Wrap in tests and add a Game Controller to add + update games
     [ApiController]
     [Route("[controller]")]
     public class ScoreController : ControllerBase
@@ -43,7 +44,7 @@ namespace ScoreSys.Api.Controllers
                 GameId = gameId,
                 Name = score.Name,
                 Score = score.Score,
-                PostedAt = DateTime.Now,
+                PostedAt = DateTime.UtcNow,
             });
             return Created("", null);
         }

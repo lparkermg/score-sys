@@ -14,6 +14,8 @@ namespace ScoreSys.Api
         {
             _contextOptions = contextOptions;
         }
+
+        // TODO: Add awaitable.
         public async Task<IList<ScoreView>> Get(Guid gameId, int take = 10, int skip = 0)
         {
             using (var context = new ScoreViewContext(_contextOptions))

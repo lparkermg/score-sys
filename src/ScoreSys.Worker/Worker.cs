@@ -20,6 +20,7 @@ namespace ScoreSys.Worker
         private readonly IConnection _connection;
         private readonly DbContextOptions _contextOptions;
 
+        // TODO: Pass in logger, DBContextOptions and IConnection + add logging for any setup issues.
         public Worker(ILogger<Worker> logger, DbContextOptions contextOptions, string hostName, string username, string password, string exchangeName)
         {
             _logger = logger;
@@ -34,6 +35,7 @@ namespace ScoreSys.Worker
             _contextOptions = contextOptions;
         }
 
+        // TODO Wrap in tests/add logging.
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             await Task.Run(() =>
@@ -51,7 +53,6 @@ namespace ScoreSys.Worker
 
                     var consumer = new EventingBasicConsumer(channel);
                     consumer.Received += EventReceived;
-
                     channel.BasicConsume(
                         queue: queueName,
                         autoAck: true,
@@ -67,6 +68,8 @@ namespace ScoreSys.Worker
         private async void EventReceived(object sender, BasicDeliverEventArgs e)
         {
             var rawBody = e.Body.ToArray();
+
+            // TODO: Validate the scores coming in.
             var body = ScoreViewExtenstions.BytesToScoreView(rawBody);
             using (var context = new ScoreViewContext(_contextOptions))
             using (var transaction = await context.Database.BeginTransactionAsync())

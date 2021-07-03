@@ -8,6 +8,7 @@ namespace ScoreSys.Migrations
     internal sealed class ContextFactories
     {
         public sealed class ScoreViewContextFactory : DesignTimeContextFactory<ScoreViewContext> { }
+        public sealed class GameViewContextFactory : DesignTimeContextFactory<GameViewContext> { }
 
         public abstract class DesignTimeContextFactory<T> : IDesignTimeDbContextFactory<T> where T : DbContext
         {

@@ -31,6 +31,7 @@ namespace ScoreSys.Entities
         }
     }
 
+    // TODO: Wrap in tests.
     public static class ScoreViewExtenstions
     {
         public static byte[] ToBytes(this ScoreView view)
