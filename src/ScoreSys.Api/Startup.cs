@@ -11,6 +11,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using RabbitMQ.Client;
+using ScoreSys.Api.Services;
 using ScoreSys.Entities;
 
 namespace ScoreSys.Api
@@ -31,12 +33,27 @@ namespace ScoreSys.Api
             var config = new ConfigurationBuilder().AddJsonFile("appsettings.json", false, false).Build();
             var contextBuilder = new DbContextOptionsBuilder();
             contextBuilder.UseSqlServer(config["SqlConnection"]);
+            var factory = new ConnectionFactory()
+            {
+                HostName = config["RabbitMQ:host"],
+                UserName = config["RabbitMQ:username"],
+                Password = config["RabbitMQ:password"],
+            };
+            var exchangeName = config["RabbitMQ:exchange"];
             services.AddSingleton<IPublisher<ScoreView>>(new RabbitScorePublisherService(
                 config["RabbitMQ:host"],
                 config["RabbitMQ:username"],
                 config["RabbitMQ:password"],
-                config["RabbitMQ:exchange"]));
+                exchangeName));
             services.AddSingleton<IQuery<IList<ScoreView>>>(new ScoreSqlQueryService(contextBuilder.Options));
+
+#pragma warning disable ASP0000 // Do not call 'IServiceCollection.BuildServiceProvider' in 'ConfigureServices'
+            var sp = services.BuildServiceProvider();
+#pragma warning restore ASP0000 // Do not call 'IServiceCollection.BuildServiceProvider' in 'ConfigureServices'
+
+            services.AddSingleton<IPublisher<GameView>>(new RabbitGamePublisherService(factory.CreateConnection(), exchangeName, sp.GetService<ILogger<RabbitGamePublisherService>>()));
+            services.AddSingleton<IQuery<GameView>>(new GameSqlQueryService(contextBuilder.Options, sp.GetService<ILogger<GameSqlQueryService>>()));
+
             services.AddControllers();
         }
 

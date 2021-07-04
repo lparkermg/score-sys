@@ -9,19 +9,20 @@ namespace ScoreSys.Migrations
     {
         private static async Task Main(string[] args)
         {
+            using (var gameContext = new ContextFactories.GameViewContextFactory().CreateDbContext(args))
             using (var scoreContext = new ContextFactories.ScoreViewContextFactory().CreateDbContext(args))
             {
                 Console.WriteLine($"Migrating Database at '{ConfigOptions.Views}'");
                 var pending = (await scoreContext.Database.GetPendingMigrationsAsync()).ToList();
-
+                pending.AddRange(await gameContext.Database.GetPendingMigrationsAsync());
                 Console.WriteLine();
                 Console.WriteLine("Will run the following migrations:");
-                foreach(var pendingMigration in pending)
+                foreach (var pendingMigration in pending)
                 {
                     Console.WriteLine(pendingMigration);
                 }
 
-                if(!args.Any(a => a.ToLower().Equals("--autoconfirm")))
+                if (!args.Any(a => a.ToLower().Equals("--autoconfirm")))
                 {
                     Console.WriteLine();
                     Console.WriteLine("Press 'Y' to confirm, or 'N' to cancel.");
@@ -44,6 +45,7 @@ namespace ScoreSys.Migrations
                 }
 
                 await scoreContext.Database.MigrateAsync();
+                await gameContext.Database.MigrateAsync();
             }
         }
     }

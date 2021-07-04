@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -16,26 +18,17 @@ namespace ScoreSys.Worker
     {
         private readonly ILogger<Worker> _logger;
         private readonly string _exchangeName;
-        private readonly ConnectionFactory _factory;
         private readonly IConnection _connection;
         private readonly DbContextOptions _contextOptions;
 
-        // TODO: Pass in logger, DBContextOptions and IConnection + add logging for any setup issues.
-        public Worker(ILogger<Worker> logger, DbContextOptions contextOptions, string hostName, string username, string password, string exchangeName)
+        public Worker(ILogger<Worker> logger, DbContextOptions contextOptions, IConnection connection, string exchangeName)
         {
             _logger = logger;
             _exchangeName = exchangeName;
-            _factory = new ConnectionFactory()
-            {
-                HostName = hostName,
-                UserName = username,
-                Password = password,
-            };
-            _connection = _factory.CreateConnection();
+            _connection = connection;
             _contextOptions = contextOptions;
         }
 
-        // TODO Wrap in tests/add logging.
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             await Task.Run(() =>
@@ -52,7 +45,7 @@ namespace ScoreSys.Worker
                         routingKey: string.Empty);
 
                     var consumer = new EventingBasicConsumer(channel);
-                    consumer.Received += EventReceived;
+                    consumer.Received += HandleEventReceived;
                     channel.BasicConsume(
                         queue: queueName,
                         autoAck: true,
@@ -65,21 +58,77 @@ namespace ScoreSys.Worker
             });
         }
 
-        private async void EventReceived(object sender, BasicDeliverEventArgs e)
+        private async void HandleEventReceived(object sender, BasicDeliverEventArgs e)
         {
-            var rawBody = e.Body.ToArray();
+            switch (e.RoutingKey)
+            {
+                case "game-data":
+                    await HandleSaveGame(e.Body.ToArray());
+                    break;
+                case "score-data":
+                    await HandleSaveScore(e.Body.ToArray());
+                    break;
+                default:
+                    _logger.LogError($"Unknown routing key provided {e.RoutingKey}");
+                    break;
+            }       
+        }
 
-            // TODO: Validate the scores coming in.
-            var body = ScoreViewExtenstions.BytesToScoreView(rawBody);
+        private async Task HandleSaveScore(byte[] data)
+        {
+            var view = default(ScoreView);
+            using (var memStream = new MemoryStream(data))
+            {
+                var binReader = new BinaryReader(memStream);
+                view.FromString(binReader.ReadString());
+            }
+
+            if(view == default(ScoreView))
+            {
+                _logger.LogError($"Score was not formatted correctly.");
+                return;
+            }
+
             using (var context = new ScoreViewContext(_contextOptions))
             using (var transaction = await context.Database.BeginTransactionAsync())
             {
-                await context.Scores.AddAsync(body);
+                await context.Scores.AddAsync(view);
                 await context.SaveChangesAsync();
                 transaction.Commit();
                 context.Dispose();
             }
-            _logger.LogDebug($"Score {body.Id} submitted successfully.");
+
+            _logger.LogDebug($"Score {view.Id} submitted successfully.");
         }
+
+        private async Task HandleSaveGame(byte[] data)
+        {
+            var view = default(GameView);
+
+            using (var memStream = new MemoryStream(data))
+            {
+                var binReader = new BinaryReader(memStream);
+                view.FromString(binReader.ReadString());
+            }
+
+            if (view == default(GameView))
+            {
+                _logger.LogError($"Score was not formatted correctly.");
+                return;
+            }
+
+            using (var context = new GameViewContext(_contextOptions))
+            using (var transaction = await context.Database.BeginTransactionAsync())
+            {
+                await context.Games.AddAsync(view);
+                await context.SaveChangesAsync();
+                transaction.Commit();
+                await context.DisposeAsync();
+            }
+
+            _logger.LogDebug($"Game {view.Id} submitted successfully.");
+        }
+
+
     }
 }
