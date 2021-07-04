@@ -5,6 +5,8 @@ using ScoreSys.Api.Services;
 using System;
 using System.Threading.Tasks;
 using ScoreSys.Entities;
+using Moq;
+using Microsoft.Extensions.Logging;
 
 namespace ScoreSys.Api.Tests
 {
@@ -19,7 +21,8 @@ namespace ScoreSys.Api.Tests
         {
             _connection = new SqliteConnection("DataSource=:memory:");
             _contextOptions = new DbContextOptionsBuilder().UseSqlite(_connection).Options;
-            _service = new GameSqlQueryService(_contextOptions);
+            var logger = Mock.Of<ILogger<GameSqlQueryService>>();
+            _service = new GameSqlQueryService(_contextOptions, logger);
         }
 
         [TearDown]

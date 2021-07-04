@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
 using ScoreSys.Api.Controllers;
@@ -15,10 +16,18 @@ namespace ScoreSys.Api.Tests.Controllers
 {
     public class GameControllerTests
     {
+        private ILogger<GameController> _logger;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _logger = Mock.Of<ILogger<GameController>>();
+        }
+
         [Test]
         public async Task Get_GivenEmptyId_ReturnsBadRequest()
         {
-            var controller = new GameController(null);
+            var controller = new GameController(null, _logger);
             var result = await controller.Get(Guid.Empty);
             var badRequest = result as BadRequestResult;
 
@@ -33,7 +42,9 @@ namespace ScoreSys.Api.Tests.Controllers
             var notFoundQuery = Mock.Of<IQuery<GameView>>();
             var notFoundQueryMock = Mock.Get(notFoundQuery);
             notFoundQueryMock.Setup(q => q.Get(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<int>())).Returns(Task.Run(() => (GameView)null));
-            var controller = new GameController(notFoundQuery);
+
+            var controller = new GameController(notFoundQuery, _logger);
+
             var id = Guid.NewGuid();
             var result = await controller.Get(id);
             var notFound = result as NotFoundObjectResult;
@@ -55,10 +66,11 @@ namespace ScoreSys.Api.Tests.Controllers
 
             var okQuery = Mock.Of<IQuery<GameView>>();
             var okQueryMock = Mock.Get(okQuery);
-            okQueryMock.Setup(q => q.Get(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<int>())).Returns(Task.Run(() => gameView));
-            var controller = new GameController(okQuery);
-            var id = Guid.NewGuid();
-            var result = await controller.Get(id);
+            okQueryMock.Setup(q => q.Get(gameView.Id, It.IsAny<int>(), It.IsAny<int>())).Returns(Task.Run(() => gameView));
+
+            var controller = new GameController(okQuery, _logger);
+
+            var result = await controller.Get(gameView.Id);
             var ok = result as OkObjectResult;
 
             Assert.That(ok, Is.Not.Null);
@@ -74,12 +86,15 @@ namespace ScoreSys.Api.Tests.Controllers
         public async Task Get_WithQueryServiceThrowingArgumentException_ReturnsBadRequestWithCorrectMessage()
         {
             var exceptionMessage = "I threw this message";
+
             var throwingQuery = Mock.Of<IQuery<GameView>>();
             var throwingQueryMock = Mock.Get(throwingQuery);
             throwingQueryMock.Setup(q => q.Get(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<int>())).Throws(new ArgumentException(exceptionMessage));
 
-            var controller = new GameController(throwingQuery);
+            var controller = new GameController(throwingQuery, _logger);
+
             var result = await controller.Get(Guid.NewGuid());
+
             var badRequest = result as BadRequestObjectResult;
 
             Assert.That(badRequest, Is.Not.Null);
@@ -92,11 +107,13 @@ namespace ScoreSys.Api.Tests.Controllers
         public async Task Get_WithQueryServiceThrowingException_ReturnsInternalServerErrorWithGenericMessage()
         {
             var exceptionMessage = "I threw this message";
+
             var throwingQuery = Mock.Of<IQuery<GameView>>();
             var throwingQueryMock = Mock.Get(throwingQuery);
             throwingQueryMock.Setup(q => q.Get(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<int>())).Throws(new Exception(exceptionMessage));
 
-            var controller = new GameController(throwingQuery);
+            var controller = new GameController(throwingQuery, _logger);
+
             var result = await controller.Get(Guid.NewGuid());
             var serverError = result as ObjectResult;
 
@@ -104,7 +121,6 @@ namespace ScoreSys.Api.Tests.Controllers
 
             Assert.That(serverError.StatusCode, Is.EqualTo((int)HttpStatusCode.InternalServerError));
             Assert.That(serverError.Value.ToString(), Is.EqualTo("There was an error requesting the game."));
-
         }
     }
 }
