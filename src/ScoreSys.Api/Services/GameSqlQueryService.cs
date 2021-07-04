@@ -13,6 +13,7 @@ namespace ScoreSys.Api.Services
 
         public GameSqlQueryService(DbContextOptions contextOptions) => _contextOptions = contextOptions;
 
+        // TODO: Add logging.
         public async Task<GameView> Get(Guid id, int take = 1, int skip = 1)
         {
             if (id == Guid.Empty)

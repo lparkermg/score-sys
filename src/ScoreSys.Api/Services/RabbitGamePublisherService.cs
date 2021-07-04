@@ -60,7 +60,7 @@ namespace ScoreSys.Api.Services
                         }
                         model.BasicPublish(_exchangeName, "game-data-queue", false, properties, body);
 
-                        _logger.LogDebug("GameView message successwfully published.");
+                        _logger.LogDebug("GameView message successfully published.");
                         return true;
                     }
                 }
