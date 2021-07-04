@@ -67,7 +67,7 @@ namespace ScoreSys.Api.Tests
             Assert.That(await _publisher.Publish(view), Is.True);
 
             _connectionMock.Verify(c => c.CreateModel(), Times.Once, "CreateModel was not called once.");
-            _modelMock.Verify(m => m.ExchangeDeclare(_exchangeName, ExchangeType.Fanout, false, true, null), Times.Once, "ExchangeDeclare was not called once.");
+            _modelMock.Verify(m => m.ExchangeDeclare(_exchangeName, ExchangeType.Fanout, false, false, null), Times.Once, "ExchangeDeclare was not called once.");
             _modelMock.Verify(m => m.BasicPublish(_exchangeName, "game-data", false, It.IsNotNull<IBasicProperties>(), It.IsAny<ReadOnlyMemory<byte>>()), Times.Once, "BasicPublish was not called correctly.");
         }
 

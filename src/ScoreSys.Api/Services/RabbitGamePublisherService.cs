@@ -50,7 +50,7 @@ namespace ScoreSys.Api.Services
                         var properties = model.CreateBasicProperties();
 
                         properties.Type = "game.data";
-                        model.ExchangeDeclare(_exchangeName, ExchangeType.Fanout, false, true);
+                        model.ExchangeDeclare(_exchangeName, ExchangeType.Fanout, false, false);
                         byte[] body = Array.Empty<byte>();
                         using (var ms = new MemoryStream())
                         {
@@ -58,7 +58,7 @@ namespace ScoreSys.Api.Services
                             bw.Write(data.ToString());
                             body = ms.ToArray();
                         }
-                        model.BasicPublish(_exchangeName, "game-data-queue", false, properties, body);
+                        model.BasicPublish(_exchangeName, "game-data", false, properties, body);
 
                         _logger.LogDebug("GameView message successfully published.");
                         return true;

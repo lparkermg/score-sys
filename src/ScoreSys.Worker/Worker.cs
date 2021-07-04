@@ -76,14 +76,14 @@ namespace ScoreSys.Worker
 
         private async Task HandleSaveScore(byte[] data)
         {
-            var view = default(ScoreView);
+            var view = new ScoreView();
             using (var memStream = new MemoryStream(data))
             {
                 var binReader = new BinaryReader(memStream);
                 view.FromString(binReader.ReadString());
             }
 
-            if(view == default(ScoreView))
+            if(view == new ScoreView())
             {
                 _logger.LogError($"Score was not formatted correctly.");
                 return;
@@ -103,7 +103,7 @@ namespace ScoreSys.Worker
 
         private async Task HandleSaveGame(byte[] data)
         {
-            var view = default(GameView);
+            var view = new GameView();
 
             using (var memStream = new MemoryStream(data))
             {
@@ -111,7 +111,7 @@ namespace ScoreSys.Worker
                 view.FromString(binReader.ReadString());
             }
 
-            if (view == default(GameView))
+            if (view == new GameView())
             {
                 _logger.LogError($"Score was not formatted correctly.");
                 return;
