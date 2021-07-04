@@ -31,7 +31,7 @@ namespace ScoreSys.Api
             var config = new ConfigurationBuilder().AddJsonFile("appsettings.json", false, false).Build();
             var contextBuilder = new DbContextOptionsBuilder();
             contextBuilder.UseSqlServer(config["SqlConnection"]);
-            services.AddSingleton<IPublisher<ScoreView>>(new RabbitPublisher(
+            services.AddSingleton<IPublisher<ScoreView>>(new RabbitScorePublisherService(
                 config["RabbitMQ:host"],
                 config["RabbitMQ:username"],
                 config["RabbitMQ:password"],

@@ -5,14 +5,14 @@ using System.Threading.Tasks;
 
 namespace ScoreSys.Api
 {
-    public sealed class RabbitPublisher : IPublisher<ScoreView>
+    public sealed class RabbitScorePublisherService : IPublisher<ScoreView>
     {
         private readonly string _exchangeName;
         private readonly ConnectionFactory _factory;
         private IConnection _connection;
 
         // TODO: Pass in the IConnection itself + Add Logging.
-        public RabbitPublisher(string hostName, string username, string password, string exchangeName)
+        public RabbitScorePublisherService(string hostName, string username, string password, string exchangeName)
         {
             _exchangeName = exchangeName;
             _factory = new ConnectionFactory() { 
