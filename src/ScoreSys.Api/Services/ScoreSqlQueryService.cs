@@ -7,13 +7,15 @@ using System.Threading.Tasks;
 
 namespace ScoreSys.Api
 {
-    public sealed class SqlQueryService : IQuery<ScoreView>
+    public sealed class ScoreSqlQueryService : IQuery<IList<ScoreView>>
     {
         private readonly DbContextOptions _contextOptions;
-        public SqlQueryService(DbContextOptions contextOptions)
+        public ScoreSqlQueryService(DbContextOptions contextOptions)
         {
             _contextOptions = contextOptions;
         }
+
+        // TODO: Add awaitable.
         public async Task<IList<ScoreView>> Get(Guid gameId, int take = 10, int skip = 0)
         {
             using (var context = new ScoreViewContext(_contextOptions))

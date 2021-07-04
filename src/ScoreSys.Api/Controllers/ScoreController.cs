@@ -8,15 +8,16 @@ using ScoreSys.Entities;
 
 namespace ScoreSys.Api.Controllers
 {
+    // TODO: Wrap in tests and add a Game Controller to add + update games
     [ApiController]
     [Route("[controller]")]
     public class ScoreController : ControllerBase
     {
         private readonly ILogger<ScoreController> _logger;
         private readonly IPublisher<ScoreView> _publisher;
-        private readonly IQuery<ScoreView> _queryHandler;
+        private readonly IQuery<IList<ScoreView>> _queryHandler;
 
-        public ScoreController(ILogger<ScoreController> logger, IPublisher<ScoreView> publisher, IQuery<ScoreView> queryHandler)
+        public ScoreController(ILogger<ScoreController> logger, IPublisher<ScoreView> publisher, IQuery<IList<ScoreView>> queryHandler)
         {
             _logger = logger;
             _publisher = publisher;
@@ -43,7 +44,7 @@ namespace ScoreSys.Api.Controllers
                 GameId = gameId,
                 Name = score.Name,
                 Score = score.Score,
-                PostedAt = DateTime.Now,
+                PostedAt = DateTime.UtcNow,
             });
             return Created("", null);
         }
