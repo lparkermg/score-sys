@@ -1,4 +1,5 @@
-﻿using RabbitMQ.Client;
+﻿using Microsoft.Extensions.Logging;
+using RabbitMQ.Client;
 using ScoreSys.Entities;
 using System;
 using System.Collections.Generic;
@@ -12,15 +13,18 @@ namespace ScoreSys.Api.Services
     {
         private readonly IConnection _connection;
         private readonly string _exchangeName;
+        private readonly ILogger<RabbitGamePublisherService> _logger;
 
-        public RabbitGamePublisherService(IConnection connection, string exchangeName) 
+        public RabbitGamePublisherService(IConnection connection, string exchangeName, ILogger<RabbitGamePublisherService> logger) 
         { 
             _connection = connection;
             _exchangeName = exchangeName;
+            _logger = logger;
         }
 
         public async Task<bool> Publish(GameView data)
         {
+            _logger.LogDebug("Starting GameView publish.");
             if (data == null)
             {
                 throw new ArgumentException("data cannot be null");
@@ -40,6 +44,7 @@ namespace ScoreSys.Api.Services
             {
                 try
                 {
+                    _logger.LogDebug("Attempting to publish GameView message.");
                     using (var model = _connection.CreateModel())
                     {
                         var properties = model.CreateBasicProperties();
@@ -55,11 +60,13 @@ namespace ScoreSys.Api.Services
                         }
                         model.BasicPublish(_exchangeName, "game-data-queue", false, properties, body);
 
+                        _logger.LogDebug("GameView message successwfully published.");
                         return true;
                     }
                 }
                 catch(Exception e)
                 {
+                    _logger.LogError(e, "Failed to publish game data.");
                     return false;
                 }
             });

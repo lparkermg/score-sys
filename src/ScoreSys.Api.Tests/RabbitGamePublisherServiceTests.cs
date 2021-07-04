@@ -1,4 +1,5 @@
-﻿using Moq;
+﻿using Microsoft.Extensions.Logging;
+using Moq;
 using NUnit.Framework;
 using RabbitMQ.Client;
 using ScoreSys.Api.Services;
@@ -15,6 +16,7 @@ namespace ScoreSys.Api.Tests
         private RabbitGamePublisherService _publisher;
         private Mock<IConnection> _connectionMock;
         private Mock<IModel> _modelMock;
+        private ILogger<RabbitGamePublisherService> _logger;
         private string _exchangeName;
 
         [SetUp]
@@ -24,11 +26,12 @@ namespace ScoreSys.Api.Tests
             var connection = Mock.Of<IConnection>();
             var model = Mock.Of<IModel>();
 
+            _logger = Mock.Of<ILogger<RabbitGamePublisherService>>();
             _connectionMock = Mock.Get(connection);
             _modelMock = Mock.Get(model);
             _connectionMock.Setup(c => c.CreateModel()).Returns(model);
             _modelMock.Setup(m => m.CreateBasicProperties()).Returns(Mock.Of<IBasicProperties>());
-            _publisher = new RabbitGamePublisherService(connection, _exchangeName);
+            _publisher = new RabbitGamePublisherService(connection, _exchangeName, _logger);
         }
 
         [Test]
@@ -91,7 +94,7 @@ namespace ScoreSys.Api.Tests
             connectionMock.Setup(c => c.CreateModel()).Returns(model);
             modelMock.Setup(m => m.CreateBasicProperties()).Throws<Exception>();
 
-            var publisher = new RabbitGamePublisherService(connection, _exchangeName);
+            var publisher = new RabbitGamePublisherService(connection, _exchangeName, _logger);
             var view = new GameView()
             {
                 Id = Guid.NewGuid(),
