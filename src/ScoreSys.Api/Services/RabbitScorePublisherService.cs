@@ -8,23 +8,17 @@ namespace ScoreSys.Api
     public sealed class RabbitScorePublisherService : IPublisher<ScoreView>
     {
         private readonly string _exchangeName;
-        private readonly ConnectionFactory _factory;
         private IConnection _connection;
 
         // TODO: Pass in the IConnection itself + Add Logging.
-        public RabbitScorePublisherService(string hostName, string username, string password, string exchangeName)
+        public RabbitScorePublisherService(IConnection connection, string exchangeName)
         {
             _exchangeName = exchangeName;
-            _factory = new ConnectionFactory() { 
-                HostName = hostName,
-                UserName = username,
-                Password = password,
-            };
-            _connection = _factory.CreateConnection();
+            _connection = connection;
         }
 
         // TODO: Wrap in tests + Add Logging 
-        public async Task<bool> Publish(ScoreView data)
+        /*public async Task<bool> Publish(ScoreView data)
         {
             return await Task.Run(() =>
              {
@@ -44,6 +38,33 @@ namespace ScoreSys.Api
                      return false;
                  }
              });
+        }*/
+
+        public async Task<bool> Publish(ScoreView data)
+        {
+            if(data == null)
+            {
+                throw new ArgumentException("data cannot be null");
+            }
+
+            if(data.Id == Guid.Empty)
+            {
+                throw new ArgumentException("Id cannot be empty");
+            }
+
+            if(data.GameId == Guid.Empty)
+            {
+                throw new ArgumentException("Game Id cannot be empty");
+            }
+
+            if (string.IsNullOrWhiteSpace(data.Name))
+            {
+                throw new ArgumentException("Name cannot be null, empty or whitespace");
+            }
+
+
+
+            return await Task.FromResult(true);
         }
     }
 }

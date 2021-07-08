@@ -40,11 +40,7 @@ namespace ScoreSys.Api
                 Password = config["RabbitMQ:password"],
             };
             var exchangeName = config["RabbitMQ:exchange"];
-            services.AddSingleton<IPublisher<ScoreView>>(new RabbitScorePublisherService(
-                config["RabbitMQ:host"],
-                config["RabbitMQ:username"],
-                config["RabbitMQ:password"],
-                exchangeName));
+            services.AddSingleton<IPublisher<ScoreView>>(new RabbitScorePublisherService(factory.CreateConnection(), exchangeName));
             services.AddSingleton<IQuery<IList<ScoreView>>>(new ScoreSqlQueryService(contextBuilder.Options));
 
 #pragma warning disable ASP0000 // Do not call 'IServiceCollection.BuildServiceProvider' in 'ConfigureServices'
