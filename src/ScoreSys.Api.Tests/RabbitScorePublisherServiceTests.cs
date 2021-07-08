@@ -13,14 +13,35 @@ namespace ScoreSys.Api.Tests
     public class RabbitScorePublisherServiceTests
     {
         private RabbitScorePublisherService _publisher;
+        private IConnection _connection;
+        private Mock<IConnection> _connectionMock;
+        private Mock<IModel> _modelMock;
         private string _exchangeName;
+        private Guid _gameId;
 
         [SetUp]
         public void SetUp()
         {
+            _gameId = Guid.NewGuid();
+            var gameView = new GameView()
+            {
+                Name = "Test Game",
+                Id = _gameId,
+            };
             _exchangeName = "test-exchange";
             var connection = Mock.Of<IConnection>();
-            _publisher = new RabbitScorePublisherService(connection, _exchangeName);
+            var model = Mock.Of<IModel>();
+            var gameSqlQueryService = Mock.Of<IQuery<GameView>>();
+            var gameSqlQueryServiceMock = Mock.Get(gameSqlQueryService);
+            gameSqlQueryServiceMock.Setup(s => s.Get(It.IsAny<Guid>(), 1, 1)).Returns(() => Task.FromResult(gameView));
+
+            _connectionMock = Mock.Get(connection);
+            _modelMock = Mock.Get(model);
+
+            _connectionMock.Setup(c => c.CreateModel()).Returns(model);
+            _modelMock.Setup(m => m.CreateBasicProperties()).Returns(Mock.Of<IBasicProperties>());
+
+            _publisher = new RabbitScorePublisherService(connection, _exchangeName, gameSqlQueryService);
         }
 
         [Test]
@@ -64,5 +85,43 @@ namespace ScoreSys.Api.Tests
                 PostedAt = DateTime.UtcNow,
 
             }), Throws.ArgumentException.With.Message.EqualTo("Name cannot be null, empty or whitespace"));
+
+        [Test]
+        public void Publish_GivenScoreViewWhereGameDoesntExist_ThrowsInvalidOperationException()
+        {
+            var gameSqlQueryService = Mock.Of<IQuery<GameView>>();
+            var gameSqlQueryServiceMock = Mock.Get(gameSqlQueryService);
+            gameSqlQueryServiceMock.Setup(s => s.Get(It.IsAny<Guid>(), 1, 1)).Returns(() => null);
+            var publisher = new RabbitScorePublisherService(_connection, "exchange", gameSqlQueryService);
+            var gameId = Guid.NewGuid();
+
+            Assert.That(async () => await publisher.Publish(new ScoreView()
+            {
+                Id = Guid.NewGuid(),
+                GameId = gameId,
+                Name = "Test User",
+                Score = 0,
+                PostedAt = DateTime.UtcNow,
+            }), Throws.InvalidOperationException.With.Message.EqualTo($"Game with id {gameId} not found"));
+        }
+
+        [Test]
+        public async Task Publish_GivenValidScoreView_CorrectlyPublishesViewDataAndReturnsTrue()
+        {
+            var score = new ScoreView()
+            {
+                Id = Guid.NewGuid(),
+                GameId = _gameId,
+                Name = "Test User",
+                Score = 5,
+                PostedAt = DateTime.UtcNow,
+            };
+
+            Assert.That(await _publisher.Publish(score), Is.True);
+
+            _connectionMock.Verify(c => c.CreateModel(), Times.Once, "CreateModel was not called once.");
+            _modelMock.Verify(m => m.ExchangeDeclare(_exchangeName, ExchangeType.Fanout, false, false, null), Times.Once, "ExchangeDeclare was not called once.");
+            _modelMock.Verify(m => m.BasicPublish(_exchangeName, "score-data", false, It.IsNotNull<IBasicProperties>(), It.IsAny<ReadOnlyMemory<byte>>()), Times.Once, "BasicPublish was not called correctly.");
+        }
     }
 }

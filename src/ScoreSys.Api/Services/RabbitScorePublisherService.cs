@@ -1,6 +1,7 @@
 ﻿using RabbitMQ.Client;
 using ScoreSys.Entities;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace ScoreSys.Api
@@ -9,12 +10,14 @@ namespace ScoreSys.Api
     {
         private readonly string _exchangeName;
         private IConnection _connection;
+        private IQuery<GameView> _query;
 
         // TODO: Pass in the IConnection itself + Add Logging.
-        public RabbitScorePublisherService(IConnection connection, string exchangeName)
+        public RabbitScorePublisherService(IConnection connection, string exchangeName, IQuery<GameView> query)
         {
             _exchangeName = exchangeName;
             _connection = connection;
+            _query = query;
         }
 
         // TODO: Wrap in tests + Add Logging 
@@ -62,9 +65,33 @@ namespace ScoreSys.Api
                 throw new ArgumentException("Name cannot be null, empty or whitespace");
             }
 
+            var game = _query.Get(data.GameId, 1, 1);
 
+            if(game == null)
+            {
+                throw new InvalidOperationException($"Game with id {data.GameId} not found");
+            }
 
-            return await Task.FromResult(true);
+            return await Task.Run(() =>
+            {
+                using (var model = _connection.CreateModel())
+                {
+                    var properties = model.CreateBasicProperties();
+
+                    properties.Type = "score.data";
+                    model.ExchangeDeclare(_exchangeName, ExchangeType.Fanout, false, false);
+                    byte[] body = Array.Empty<byte>();
+                    using (var ms = new MemoryStream())
+                    {
+                        BinaryWriter bw = new BinaryWriter(ms);
+                        bw.Write(data.ToString());
+                        body = ms.ToArray();
+                    }
+                    model.BasicPublish(_exchangeName, "score-data", false, properties, body);
+
+                    return true;
+                }
+            });
         }
     }
 }
