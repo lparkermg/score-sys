@@ -16,6 +16,7 @@ namespace ScoreSys.Api.Tests
         private IConnection _connection;
         private Mock<IConnection> _connectionMock;
         private Mock<IModel> _modelMock;
+        private Mock<IQuery<GameView>> _gameViewQueryMock;
         private string _exchangeName;
         private Guid _gameId;
 
@@ -32,8 +33,8 @@ namespace ScoreSys.Api.Tests
             var connection = Mock.Of<IConnection>();
             var model = Mock.Of<IModel>();
             var gameSqlQueryService = Mock.Of<IQuery<GameView>>();
-            var gameSqlQueryServiceMock = Mock.Get(gameSqlQueryService);
-            gameSqlQueryServiceMock.Setup(s => s.Get(It.IsAny<Guid>(), 1, 1)).Returns(() => Task.FromResult(gameView));
+            _gameViewQueryMock = Mock.Get(gameSqlQueryService);
+            _gameViewQueryMock.Setup(s => s.Get(It.IsAny<Guid>(), 1, 1)).Returns(() => Task.FromResult(gameView));
 
             _connectionMock = Mock.Get(connection);
             _modelMock = Mock.Get(model);
@@ -91,7 +92,7 @@ namespace ScoreSys.Api.Tests
         {
             var gameSqlQueryService = Mock.Of<IQuery<GameView>>();
             var gameSqlQueryServiceMock = Mock.Get(gameSqlQueryService);
-            gameSqlQueryServiceMock.Setup(s => s.Get(It.IsAny<Guid>(), 1, 1)).Returns(() => null);
+            gameSqlQueryServiceMock.Setup(s => s.Get(It.IsAny<Guid>(), 1, 1)).Returns(() => Task.FromResult((GameView)null));
             var publisher = new RabbitScorePublisherService(_connection, "exchange", gameSqlQueryService);
             var gameId = Guid.NewGuid();
 
@@ -122,6 +123,57 @@ namespace ScoreSys.Api.Tests
             _connectionMock.Verify(c => c.CreateModel(), Times.Once, "CreateModel was not called once.");
             _modelMock.Verify(m => m.ExchangeDeclare(_exchangeName, ExchangeType.Fanout, false, false, null), Times.Once, "ExchangeDeclare was not called once.");
             _modelMock.Verify(m => m.BasicPublish(_exchangeName, "score-data", false, It.IsNotNull<IBasicProperties>(), It.IsAny<ReadOnlyMemory<byte>>()), Times.Once, "BasicPublish was not called correctly.");
+        }
+
+        [Test]
+        public async Task Publish_GivenConnectionThatThrows_ReturnsFalse()
+        {
+            var score = new ScoreView()
+            {
+                Id = Guid.NewGuid(),
+                GameId = _gameId,
+                Name = "Test User",
+                Score = 5,
+                PostedAt = DateTime.UtcNow,
+            };
+
+            _connectionMock.Setup(c => c.CreateModel()).Throws<Exception>();
+
+            Assert.That(await _publisher.Publish(score), Is.False);
+        }
+
+        [Test]
+        public async Task Publish_GivenQueryServiceThatThrows_ReturnsFalse()
+        {
+            var score = new ScoreView()
+            {
+                Id = Guid.NewGuid(),
+                GameId = _gameId,
+                Name = "Test User",
+                Score = 5,
+                PostedAt = DateTime.UtcNow,
+            };
+
+            _gameViewQueryMock.Setup(s => s.Get(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<int>())).Throws<Exception>();
+
+            Assert.That(await _publisher.Publish(score), Is.False);
+        }
+
+        [Test]
+        public async Task Publish_GivenModelThatThrows_ReturnsFalse()
+        {
+            var score = new ScoreView()
+            {
+                Id = Guid.NewGuid(),
+                GameId = _gameId,
+                Name = "Test User",
+                Score = 5,
+                PostedAt = DateTime.UtcNow,
+            };
+
+            _modelMock.Setup(m => m.CreateBasicProperties()).Throws<Exception>();
+
+            Assert.That(await _publisher.Publish(score), Is.False);
         }
     }
 }

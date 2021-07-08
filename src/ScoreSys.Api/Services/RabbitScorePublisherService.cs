@@ -12,7 +12,7 @@ namespace ScoreSys.Api
         private IConnection _connection;
         private IQuery<GameView> _query;
 
-        // TODO: Pass in the IConnection itself + Add Logging.
+        // TODO: Add Logging.
         public RabbitScorePublisherService(IConnection connection, string exchangeName, IQuery<GameView> query)
         {
             _exchangeName = exchangeName;
@@ -20,29 +20,7 @@ namespace ScoreSys.Api
             _query = query;
         }
 
-        // TODO: Wrap in tests + Add Logging 
-        /*public async Task<bool> Publish(ScoreView data)
-        {
-            return await Task.Run(() =>
-             {
-                 try
-                 {
-                     using (var channel = _connection.CreateModel())
-                     {
-                         channel.ExchangeDeclare(_exchangeName, ExchangeType.Fanout, false);
-                         var body = data.ToBytes();
-                         channel.BasicPublish(_exchangeName, string.Empty, basicProperties: null, body: body);
-
-                         return true;
-                     }
-                 }
-                 catch (Exception e)
-                 {
-                     return false;
-                 }
-             });
-        }*/
-
+        // TODO: Add logging.
         public async Task<bool> Publish(ScoreView data)
         {
             if(data == null)
@@ -65,7 +43,15 @@ namespace ScoreSys.Api
                 throw new ArgumentException("Name cannot be null, empty or whitespace");
             }
 
-            var game = _query.Get(data.GameId, 1, 1);
+            GameView game = null;
+            try
+            {
+                game = await _query.Get(data.GameId, 1, 1);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
 
             if(game == null)
             {
@@ -74,22 +60,29 @@ namespace ScoreSys.Api
 
             return await Task.Run(() =>
             {
-                using (var model = _connection.CreateModel())
+                try
                 {
-                    var properties = model.CreateBasicProperties();
-
-                    properties.Type = "score.data";
-                    model.ExchangeDeclare(_exchangeName, ExchangeType.Fanout, false, false);
-                    byte[] body = Array.Empty<byte>();
-                    using (var ms = new MemoryStream())
+                    using (var model = _connection.CreateModel())
                     {
-                        BinaryWriter bw = new BinaryWriter(ms);
-                        bw.Write(data.ToString());
-                        body = ms.ToArray();
-                    }
-                    model.BasicPublish(_exchangeName, "score-data", false, properties, body);
+                        var properties = model.CreateBasicProperties();
 
-                    return true;
+                        properties.Type = "score.data";
+                        model.ExchangeDeclare(_exchangeName, ExchangeType.Fanout, false, false);
+                        byte[] body = Array.Empty<byte>();
+                        using (var ms = new MemoryStream())
+                        {
+                            BinaryWriter bw = new BinaryWriter(ms);
+                            bw.Write(data.ToString());
+                            body = ms.ToArray();
+                        }
+                        model.BasicPublish(_exchangeName, "score-data", false, properties, body);
+
+                        return true;
+                    }
+                }
+                catch(Exception e)
+                {
+                    return false;
                 }
             });
         }
