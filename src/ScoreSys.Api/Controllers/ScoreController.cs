@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -14,16 +15,40 @@ namespace ScoreSys.Api.Controllers
     public class ScoreController : ControllerBase
     {
         private readonly ILogger<ScoreController> _logger;
-        private readonly IPublisher<ScoreView> _publisher;
         private readonly IQuery<IList<ScoreView>> _queryHandler;
 
-        public ScoreController(ILogger<ScoreController> logger, IPublisher<ScoreView> publisher, IQuery<IList<ScoreView>> queryHandler)
+        public ScoreController(IQuery<IList<ScoreView>> queryHandler, ILogger<ScoreController> logger)
         {
-            _logger = logger;
-            _publisher = publisher;
             _queryHandler = queryHandler;
+            _logger = logger;
         }
 
+        [HttpGet("{gameId}/top")]
+        public async Task<IActionResult> GetTop(Guid gameId,[FromQuery]int take, [FromQuery]int skip)
+        {
+            if(gameId == Guid.Empty)
+            {
+                return BadRequest();
+            }
+
+            try
+            {
+                var results = await _queryHandler.Get(gameId, take, skip);
+                return Ok(results);
+            }
+            catch (ArgumentException ae)
+            {
+                return BadRequest(ae.Message);
+            }
+            catch (Exception e)
+            {
+                var response = new ObjectResult(e.Message);
+                response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                return response;
+            }
+        }
+
+        /*
         [HttpGet("{gameId}/top-{amount}")]
         public async Task<IList<ScoreView>> GetTopTen(Guid gameId, int amount)
         {
@@ -48,5 +73,6 @@ namespace ScoreSys.Api.Controllers
             });
             return Created("", null);
         }
+        */
     }
 }
