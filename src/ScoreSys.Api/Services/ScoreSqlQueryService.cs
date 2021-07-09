@@ -15,15 +15,6 @@ namespace ScoreSys.Api
             _contextOptions = contextOptions;
         }
 
-        // TODO: Add awaitable.
-        /*public async Task<IList<ScoreView>> Get(Guid gameId, int take = 10, int skip = 0)
-        {
-            using (var context = new ScoreViewContext(_contextOptions))
-            {
-                return context.Scores.Where(s => s.GameId == gameId).OrderByDescending(s => s.Score).Skip(skip).Take(take).ToList();
-            }
-        }*/
-
         public async Task<IList<ScoreView>> Get(Guid gameId, int take = 10, int skip = 0)
         {
             if (gameId == Guid.Empty)
