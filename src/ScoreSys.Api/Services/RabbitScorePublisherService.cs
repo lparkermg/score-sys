@@ -1,4 +1,5 @@
-﻿using RabbitMQ.Client;
+﻿using Microsoft.Extensions.Logging;
+using RabbitMQ.Client;
 using ScoreSys.Entities;
 using System;
 using System.IO;
@@ -11,18 +12,19 @@ namespace ScoreSys.Api
         private readonly string _exchangeName;
         private IConnection _connection;
         private IQuery<GameView> _query;
+        private ILogger<RabbitScorePublisherService> _logger;
 
-        // TODO: Add Logging.
-        public RabbitScorePublisherService(IConnection connection, string exchangeName, IQuery<GameView> query)
+        public RabbitScorePublisherService(IConnection connection, string exchangeName, IQuery<GameView> query, ILogger<RabbitScorePublisherService> logger)
         {
             _exchangeName = exchangeName;
             _connection = connection;
             _query = query;
+            _logger = logger;
         }
 
-        // TODO: Add logging.
         public async Task<bool> Publish(ScoreView data)
         {
+            _logger.LogDebug("Attempting to publish score data.");
             if(data == null)
             {
                 throw new ArgumentException("data cannot be null");
@@ -46,10 +48,12 @@ namespace ScoreSys.Api
             GameView game = null;
             try
             {
+                _logger.LogDebug($"Attempting to find game {data.GameId}.");
                 game = await _query.Get(data.GameId, 1, 1);
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                _logger.LogError(e, "There was an error getting the game.");
                 return false;
             }
 
@@ -62,6 +66,7 @@ namespace ScoreSys.Api
             {
                 try
                 {
+                    _logger.LogDebug("Attempting to send score data message.");
                     using (var model = _connection.CreateModel())
                     {
                         var properties = model.CreateBasicProperties();
@@ -82,6 +87,7 @@ namespace ScoreSys.Api
                 }
                 catch(Exception e)
                 {
+                    _logger.LogError(e, "There was an error submitting the score data message.");
                     return false;
                 }
             });

@@ -1,4 +1,5 @@
-﻿using Moq;
+﻿using Microsoft.Extensions.Logging;
+using Moq;
 using NUnit.Framework;
 using RabbitMQ.Client;
 using ScoreSys.Entities;
@@ -30,19 +31,19 @@ namespace ScoreSys.Api.Tests
                 Id = _gameId,
             };
             _exchangeName = "test-exchange";
-            var connection = Mock.Of<IConnection>();
+            _connection = Mock.Of<IConnection>();
             var model = Mock.Of<IModel>();
             var gameSqlQueryService = Mock.Of<IQuery<GameView>>();
             _gameViewQueryMock = Mock.Get(gameSqlQueryService);
             _gameViewQueryMock.Setup(s => s.Get(It.IsAny<Guid>(), 1, 1)).Returns(() => Task.FromResult(gameView));
 
-            _connectionMock = Mock.Get(connection);
+            _connectionMock = Mock.Get(_connection);
             _modelMock = Mock.Get(model);
 
             _connectionMock.Setup(c => c.CreateModel()).Returns(model);
             _modelMock.Setup(m => m.CreateBasicProperties()).Returns(Mock.Of<IBasicProperties>());
-
-            _publisher = new RabbitScorePublisherService(connection, _exchangeName, gameSqlQueryService);
+            var logger = Mock.Of<ILogger<RabbitScorePublisherService>>();
+            _publisher = new RabbitScorePublisherService(_connection, _exchangeName, gameSqlQueryService, logger);
         }
 
         [Test]
@@ -93,7 +94,8 @@ namespace ScoreSys.Api.Tests
             var gameSqlQueryService = Mock.Of<IQuery<GameView>>();
             var gameSqlQueryServiceMock = Mock.Get(gameSqlQueryService);
             gameSqlQueryServiceMock.Setup(s => s.Get(It.IsAny<Guid>(), 1, 1)).Returns(() => Task.FromResult((GameView)null));
-            var publisher = new RabbitScorePublisherService(_connection, "exchange", gameSqlQueryService);
+            var logger = Mock.Of<ILogger<RabbitScorePublisherService>>();
+            var publisher = new RabbitScorePublisherService(_connection, "exchange", gameSqlQueryService, logger);
             var gameId = Guid.NewGuid();
 
             Assert.That(async () => await publisher.Publish(new ScoreView()

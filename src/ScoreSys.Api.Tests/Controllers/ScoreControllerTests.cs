@@ -192,7 +192,7 @@ namespace ScoreSys.Api.Tests.Controllers
                 Score = 10,
             };
             var gameId = Guid.NewGuid();
-
+            _publisherMock.Setup(p => p.Publish(It.IsAny<ScoreView>())).ReturnsAsync(true);
             var result = await _controller.Post(gameId, score);
             var created = result as CreatedResult;
 
