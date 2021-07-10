@@ -30,18 +30,4 @@ namespace ScoreSys.Entities
             PostedAt = DateTime.Parse(split[4]);
         }
     }
-
-    // TODO: Wrap in tests.
-    public static class ScoreViewExtenstions
-    {
-        public static byte[] ToBytes(this ScoreView view)
-        {
-            using (var ms = new MemoryStream())
-            {
-                BinaryWriter bw = new BinaryWriter(ms);
-                bw.Write(view.ToString());
-                return ms.ToArray();
-            }
-        }
-    }
 }

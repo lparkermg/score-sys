@@ -53,11 +53,8 @@ namespace ScoreSys.Api
             sp = services.BuildServiceProvider();
 #pragma warning restore ASP0000 // Do not call 'IServiceCollection.BuildServiceProvider' in 'ConfigureServices'
 
-            services.AddSingleton<IPublisher<ScoreView>>(new RabbitScorePublisherService(factory.CreateConnection(), exchangeName, sp.GetService<IQuery<GameView>>()));
+            services.AddSingleton<IPublisher<ScoreView>>(new RabbitScorePublisherService(factory.CreateConnection(), exchangeName, sp.GetService<IQuery<GameView>>(), sp.GetService<ILogger<RabbitScorePublisherService>>()));
             services.AddSingleton<IQuery<IList<ScoreView>>>(new ScoreSqlQueryService(contextBuilder.Options));
-
-
-
             services.AddControllers();
         }
 
