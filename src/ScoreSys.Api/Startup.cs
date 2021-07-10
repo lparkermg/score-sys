@@ -55,12 +55,20 @@ namespace ScoreSys.Api
 
             services.AddSingleton<IPublisher<ScoreView>>(new RabbitScorePublisherService(factory.CreateConnection(), exchangeName, sp.GetService<IQuery<GameView>>(), sp.GetService<ILogger<RabbitScorePublisherService>>()));
             services.AddSingleton<IQuery<IList<ScoreView>>>(new ScoreSqlQueryService(contextBuilder.Options));
+            services.AddSwaggerGen();
             services.AddControllers();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseSwagger();
+
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Score Sys API");
+            });
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
