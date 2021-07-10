@@ -17,15 +17,21 @@ namespace ScoreSys.Api.Tests.Controllers
     {
         private ILogger<ScoreController> _logger;
         private Mock<IQuery<IList<ScoreView>>> _queryMock;
+        private Mock<IPublisher<ScoreView>> _publisherMock;
         private ScoreController _controller;
 
         [SetUp]
         public void SetUp()
         {
             _logger = Mock.Of<ILogger<ScoreController>>();
+
             var query = Mock.Of<IQuery<IList<ScoreView>>>();
             _queryMock = Mock.Get(query);
-            _controller = new ScoreController(query, _logger);
+
+            var publisher = Mock.Of<IPublisher<ScoreView>>();
+            _publisherMock = Mock.Get(publisher);
+
+            _controller = new ScoreController(query, publisher, _logger);
         }
 
         [Test]
@@ -123,6 +129,77 @@ namespace ScoreSys.Api.Tests.Controllers
 
             Assert.That(error.StatusCode, Is.EqualTo((int)HttpStatusCode.InternalServerError));
             Assert.That(error.Value.ToString(), Is.EqualTo(message));
+        }
+
+        [Test]
+        public async Task Post_GivenEmptyGameId_ReturnsBadRequestWithMessage()
+        {
+            var result = await _controller.Post(Guid.Empty, null);
+            var badRequest = result as BadRequestObjectResult;
+
+            Assert.That(badRequest, Is.Not.Null);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(badRequest.StatusCode, Is.EqualTo((int)HttpStatusCode.BadRequest));
+                Assert.That(badRequest.Value.ToString(), Is.EqualTo("Game Id cannot be null"));
+            });
+        }
+
+        [Test]
+        public async Task Post_GivenNullScorePost_ReturnsBadRequestWithMessage()
+        {
+            var result = await _controller.Post(Guid.NewGuid(), null);
+            var badRequest = result as BadRequestObjectResult;
+
+            Assert.That(badRequest, Is.Not.Null);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(badRequest.StatusCode, Is.EqualTo((int)HttpStatusCode.BadRequest));
+                Assert.That(badRequest.Value.ToString(), Is.EqualTo("Request body is required"));
+            });
+        }
+
+        [TestCase(null, 10, "Name must be populated")]
+        [TestCase("", 10, "Name must be populated")]
+        [TestCase("       ", 10, "Name must be populated")]
+        [TestCase("Test Name", -5, "Score cannot be negative")]
+        public async Task Post_GivenInvalidScorePost_ReturnsBadRequestWithExpectedMessage(string name, int score, string expectedMessage)
+        {
+            var result = await _controller.Post(Guid.NewGuid(), new ScorePost() 
+            {
+                Name = name,
+                Score = score
+            });
+            var badRequest = result as BadRequestObjectResult;
+
+            Assert.That(badRequest, Is.Not.Null);
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(badRequest.StatusCode, Is.EqualTo((int)HttpStatusCode.BadRequest));
+                Assert.That(badRequest.Value.ToString(), Is.EqualTo(expectedMessage));
+            });
+        }
+
+        [Test]
+        public async Task Post_GivenValidScorePost_CallsPublishWithScoreViewAndReturnsCreated()
+        {
+            var score = new ScorePost()
+            {
+                Name = "Test Name",
+                Score = 10,
+            };
+            var gameId = Guid.NewGuid();
+
+            var result = await _controller.Post(gameId, score);
+            var created = result as CreatedResult;
+
+            Assert.That(created, Is.Not.Null);
+            Assert.That(created.StatusCode, Is.EqualTo((int)HttpStatusCode.Created));
+            Assert.That(created.Value, Is.TypeOf<Guid>());
+            _publisherMock.Verify(p => p.Publish(It.IsAny<ScoreView>()), Times.Once, "Publish called incorrectly");
         }
 
         private ScoreView BuildScore()
