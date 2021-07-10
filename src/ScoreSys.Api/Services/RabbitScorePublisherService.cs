@@ -1,6 +1,8 @@
-﻿using RabbitMQ.Client;
+﻿using Microsoft.Extensions.Logging;
+using RabbitMQ.Client;
 using ScoreSys.Entities;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace ScoreSys.Api
@@ -8,42 +10,87 @@ namespace ScoreSys.Api
     public sealed class RabbitScorePublisherService : IPublisher<ScoreView>
     {
         private readonly string _exchangeName;
-        private readonly ConnectionFactory _factory;
         private IConnection _connection;
+        private IQuery<GameView> _query;
+        private ILogger<RabbitScorePublisherService> _logger;
 
-        // TODO: Pass in the IConnection itself + Add Logging.
-        public RabbitScorePublisherService(string hostName, string username, string password, string exchangeName)
+        public RabbitScorePublisherService(IConnection connection, string exchangeName, IQuery<GameView> query, ILogger<RabbitScorePublisherService> logger)
         {
             _exchangeName = exchangeName;
-            _factory = new ConnectionFactory() { 
-                HostName = hostName,
-                UserName = username,
-                Password = password,
-            };
-            _connection = _factory.CreateConnection();
+            _connection = connection;
+            _query = query;
+            _logger = logger;
         }
 
-        // TODO: Wrap in tests + Add Logging 
         public async Task<bool> Publish(ScoreView data)
         {
-            return await Task.Run(() =>
-             {
-                 try
-                 {
-                     using (var channel = _connection.CreateModel())
-                     {
-                         channel.ExchangeDeclare(_exchangeName, ExchangeType.Fanout, false);
-                         var body = data.ToBytes();
-                         channel.BasicPublish(_exchangeName, string.Empty, basicProperties: null, body: body);
+            _logger.LogDebug("Attempting to publish score data.");
+            if(data == null)
+            {
+                throw new ArgumentException("data cannot be null");
+            }
 
-                         return true;
-                     }
-                 }
-                 catch (Exception e)
-                 {
-                     return false;
-                 }
-             });
+            if(data.Id == Guid.Empty)
+            {
+                throw new ArgumentException("Id cannot be empty");
+            }
+
+            if(data.GameId == Guid.Empty)
+            {
+                throw new ArgumentException("Game Id cannot be empty");
+            }
+
+            if (string.IsNullOrWhiteSpace(data.Name))
+            {
+                throw new ArgumentException("Name cannot be null, empty or whitespace");
+            }
+
+            GameView game = null;
+            try
+            {
+                _logger.LogDebug($"Attempting to find game {data.GameId}.");
+                game = await _query.Get(data.GameId, 1, 1);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "There was an error getting the game.");
+                return false;
+            }
+
+            if(game == null)
+            {
+                throw new InvalidOperationException($"Game with id {data.GameId} not found");
+            }
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger.LogDebug("Attempting to send score data message.");
+                    using (var model = _connection.CreateModel())
+                    {
+                        var properties = model.CreateBasicProperties();
+
+                        properties.Type = "score.data";
+                        model.ExchangeDeclare(_exchangeName, ExchangeType.Fanout, false, false);
+                        byte[] body = Array.Empty<byte>();
+                        using (var ms = new MemoryStream())
+                        {
+                            BinaryWriter bw = new BinaryWriter(ms);
+                            bw.Write(data.ToString());
+                            body = ms.ToArray();
+                        }
+                        model.BasicPublish(_exchangeName, "score-data", false, properties, body);
+
+                        return true;
+                    }
+                }
+                catch(Exception e)
+                {
+                    _logger.LogError(e, "There was an error submitting the score data message.");
+                    return false;
+                }
+            });
         }
     }
 }

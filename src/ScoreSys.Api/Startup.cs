@@ -40,12 +40,6 @@ namespace ScoreSys.Api
                 Password = config["RabbitMQ:password"],
             };
             var exchangeName = config["RabbitMQ:exchange"];
-            services.AddSingleton<IPublisher<ScoreView>>(new RabbitScorePublisherService(
-                config["RabbitMQ:host"],
-                config["RabbitMQ:username"],
-                config["RabbitMQ:password"],
-                exchangeName));
-            services.AddSingleton<IQuery<IList<ScoreView>>>(new ScoreSqlQueryService(contextBuilder.Options));
 
 #pragma warning disable ASP0000 // Do not call 'IServiceCollection.BuildServiceProvider' in 'ConfigureServices'
             var sp = services.BuildServiceProvider();
@@ -54,6 +48,13 @@ namespace ScoreSys.Api
             services.AddSingleton<IPublisher<GameView>>(new RabbitGamePublisherService(factory.CreateConnection(), exchangeName, sp.GetService<ILogger<RabbitGamePublisherService>>()));
             services.AddSingleton<IQuery<GameView>>(new GameSqlQueryService(contextBuilder.Options, sp.GetService<ILogger<GameSqlQueryService>>()));
 
+#pragma warning disable ASP0000 // Do not call 'IServiceCollection.BuildServiceProvider' in 'ConfigureServices'
+            // This needs to be called again to update the provider with the added services.
+            sp = services.BuildServiceProvider();
+#pragma warning restore ASP0000 // Do not call 'IServiceCollection.BuildServiceProvider' in 'ConfigureServices'
+
+            services.AddSingleton<IPublisher<ScoreView>>(new RabbitScorePublisherService(factory.CreateConnection(), exchangeName, sp.GetService<IQuery<GameView>>(), sp.GetService<ILogger<RabbitScorePublisherService>>()));
+            services.AddSingleton<IQuery<IList<ScoreView>>>(new ScoreSqlQueryService(contextBuilder.Options));
             services.AddControllers();
         }
 
