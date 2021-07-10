@@ -9,7 +9,6 @@ using ScoreSys.Entities;
 
 namespace ScoreSys.Api.Controllers
 {
-    // TODO: Add logging
     [ApiController]
     [Route("[controller]")]
     public class ScoreController : ControllerBase
@@ -28,6 +27,7 @@ namespace ScoreSys.Api.Controllers
         [HttpGet("{gameId}/top")]
         public async Task<IActionResult> GetTop(Guid gameId, [FromQuery]int take, [FromQuery]int skip)
         {
+            _logger.LogDebug($"Attempting to get top scores for game {gameId}.");
             if(gameId == Guid.Empty)
             {
                 return BadRequest();
@@ -35,6 +35,7 @@ namespace ScoreSys.Api.Controllers
 
             try
             {
+                _logger.LogDebug("Querying scores for game.");
                 var results = await _queryHandler.Get(gameId, take, skip);
                 return Ok(results);
             }
@@ -44,6 +45,7 @@ namespace ScoreSys.Api.Controllers
             }
             catch (Exception e)
             {
+                _logger.LogError(e, "Error while querying scores for game.");
                 var response = new ObjectResult(e.Message);
                 response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 return response;
@@ -53,6 +55,7 @@ namespace ScoreSys.Api.Controllers
         [HttpPost("{gameId}")]
         public async Task<IActionResult> Post(Guid gameId, [FromBody]ScorePost score)
         {
+            _logger.LogDebug($"Attempting to submit score for game {gameId}.");
             if(gameId == Guid.Empty)
             {
                 return BadRequest("Game Id cannot be null");
@@ -73,16 +76,31 @@ namespace ScoreSys.Api.Controllers
                 return BadRequest("Score cannot be negative");
             }
 
-            var scoreId = Guid.NewGuid();
-            await _publisher.Publish(new ScoreView()
-            { 
-                Id = scoreId,
-                GameId = gameId,
-                Score = score.Score,
-                Name = score.Name,
-                PostedAt = DateTime.UtcNow,
-            });
-            return Created("", scoreId);
+            try
+            {
+                _logger.LogDebug("Attempting to publish score to database.");
+                var scoreId = Guid.NewGuid();
+                if(!await _publisher.Publish(new ScoreView()
+                {
+                    Id = scoreId,
+                    GameId = gameId,
+                    Score = score.Score,
+                    Name = score.Name,
+                    PostedAt = DateTime.UtcNow,
+                }))
+                {
+                    throw new Exception("Something went wrong while submitting score.");
+                }
+
+                return Created("", scoreId);
+            }
+            catch(Exception e)
+            {
+                _logger.LogError(e, "Error while publishing score to database.");
+                var response = new ObjectResult(e.Message);
+                response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                return response;
+            }
         }
     }
 }

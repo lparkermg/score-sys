@@ -202,6 +202,46 @@ namespace ScoreSys.Api.Tests.Controllers
             _publisherMock.Verify(p => p.Publish(It.IsAny<ScoreView>()), Times.Once, "Publish called incorrectly");
         }
 
+        [Test]
+        public async Task Post_GivenPublisherReturningFalse_ReturnsInternalServerErrorWithMessage()
+        {
+            var expectedMessage = "Something went wrong while submitting score.";
+            _publisherMock.Setup(p => p.Publish(It.IsAny<ScoreView>())).ReturnsAsync(false);
+
+            var score = new ScorePost()
+            {
+                Name = "Test Name",
+                Score = 10,
+            };
+            var gameId = Guid.NewGuid();
+
+            var result = await _controller.Post(gameId, score);
+            var error = result as ObjectResult;
+
+            Assert.That(error.StatusCode, Is.EqualTo((int)HttpStatusCode.InternalServerError));
+            Assert.That(error.Value.ToString(), Is.EqualTo(expectedMessage));
+        }
+
+        [Test]
+        public async Task Post_GivenPublisherThrowingException_ReturnsInternalServerErrorWithMessage()
+        {
+            var expectedMessage = "Something went wrong while submitting score.";
+            _publisherMock.Setup(p => p.Publish(It.IsAny<ScoreView>())).ThrowsAsync(new Exception(expectedMessage));
+
+            var score = new ScorePost()
+            {
+                Name = "Test Name",
+                Score = 10,
+            };
+            var gameId = Guid.NewGuid();
+
+            var result = await _controller.Post(gameId, score);
+            var error = result as ObjectResult;
+
+            Assert.That(error.StatusCode, Is.EqualTo((int)HttpStatusCode.InternalServerError));
+            Assert.That(error.Value.ToString(), Is.EqualTo(expectedMessage));
+        }
+
         private ScoreView BuildScore()
             => new ScoreView()
             {
