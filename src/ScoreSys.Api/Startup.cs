@@ -29,7 +29,6 @@ namespace ScoreSys.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            // TODO: Add environment variable capturing.
             var config = new ConfigurationBuilder().AddJsonFile("appsettings.json", false, false).Build();
             var contextBuilder = new DbContextOptionsBuilder();
             contextBuilder.UseSqlServer(config["SqlConnection"]);
