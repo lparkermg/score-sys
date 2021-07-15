@@ -3,8 +3,7 @@ param (
     [string]$imageBase = "score-sys"
 )
 
-# TODO: Uncomment when logging in to AWS and running the returned docker command is sorted.
-#[string]$region = "eu-west-2"
+[string]$region = "eu-west-2"
 
 function BuildImages(){
     Write-Host("Building images for version $version");
@@ -15,8 +14,9 @@ function BuildImages(){
 }
 
 function PushImages(){
-    # Todo: Login to aws and docker.
-    # $(aws ecr get-login --region $region --no-include-email)
+    Write-Host("Attempting to log in to docker via AWS...")
+    aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin "${Env:AWS_ACCOUNT_ID}.dkr.ecr.${region}.amazonaws.com"
+    
     Write-Host("Pushing images");
     Write-Host("==============");
 
@@ -33,6 +33,7 @@ function PushImages(){
 
 BuildImages
 Write-Host("Images built");
+
 if($imageBase -ne "score-sys"){
     PushImages
     Write-Host("Images pushed");
