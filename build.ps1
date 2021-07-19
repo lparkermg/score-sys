@@ -1,6 +1,8 @@
 param (
     [string]$version = "0.0.0",
-    [string]$imageBase = "score-sys"
+    [string]$imageBase = "score-sys",
+    [string]$environment = "dev",
+    [string]$awsAccountId = "PASS-IN-ID"
 )
 
 [string]$region = "eu-west-2"
@@ -15,7 +17,7 @@ function BuildImages(){
 
 function PushImages(){
     Write-Host("Attempting to log in to docker via AWS...")
-    aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin "${Env:AWS_ACCOUNT_ID}.dkr.ecr.${region}.amazonaws.com"
+    aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin "${awsAccountId}.dkr.ecr.${region}.amazonaws.com"
     
     Write-Host("Pushing images");
     Write-Host("==============");
