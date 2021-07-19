@@ -10,9 +10,8 @@ param (
 function BuildImages(){
     Write-Host("Building images for version $version");
     Write-Host("===============");
-    & docker image build -t $imageBase/api:$version -t $imageBase/api:latest --force-rm -f ./build/api/Dockerfile .
-    & docker image build -t $imageBase/worker:$version -t $imageBase/worker:latest --force-rm -f ./build/worker/Dockerfile .
-    & docker image build -t $imageBase/migrations:$version -t $imageBase/migrations:latest --force-rm -f ./build/migrations/Dockerfile .
+    & docker image build -t $imageBase/api:$version --force-rm -f ./build/api/Dockerfile .
+    & docker image build -t $imageBase/worker:$version --force-rm -f ./build/worker/Dockerfile .
 }
 
 function PushImages(){
@@ -25,12 +24,6 @@ function PushImages(){
     Write-Host("Versioned images:");
     & docker push $imageBase/api:$version
     & docker push $imageBase/worker:$version
-    & docker push $imageBase/migrations:$version
-
-    Write-Host("Latest images:");
-    & docker push $imageBase/api:latest
-    & docker push $imageBase/worker:latest
-    & docker push $imageBase/migrations:latest
 }
 
 BuildImages
