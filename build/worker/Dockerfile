@@ -1,5 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:5.0-alpine as dependencies
 WORKDIR /build
+# Have to copy each of these in individually as Go's filepath.match
+# does not support handling wildcard subfolders using ** (eg ./src/**/*.csproj)
 COPY ./src/ScoreSys.Api/*.csproj ./ScoreSys.Api/
 COPY ./src/ScoreSys.Api.Tests/*.csproj ./ScoreSys.Api.Tests/
 COPY ./src/ScoreSys.Entities/*.csproj ./ScoreSys.Entities/
