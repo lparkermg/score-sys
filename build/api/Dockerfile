@@ -16,11 +16,8 @@ RUN dotnet publish ./ScoreSys.Api/ScoreSys.Api.csproj -c Release -o api
 RUN dotnet test --results-directory /testresults --logger "trx;LogFileName=test_results.xml" ./ScoreSys.Api.Tests/ScoreSys.Api.Tests.csproj
 
 FROM mcr.microsoft.com/dotnet/aspnet:5.0-alpine as api
-RUN adduser --disabled-password --home /app --gecos '' app && chown -R app /app
-USER app
 WORKDIR /app
 COPY --from=build /build/api ./
-ENV DOTNET_RUNNING_IN_CONTAINER=true \
-    ASPNETCORE_URLS=http://+:8080
+EXPOSE 80/tcp
 ENTRYPOINT ["dotnet", "ScoreSys.Api.dll"]
 

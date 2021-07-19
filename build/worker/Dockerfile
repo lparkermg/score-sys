@@ -15,9 +15,6 @@ COPY ./src/ .
 RUN dotnet publish ./ScoreSys.Worker/ScoreSys.Worker.csproj -c Release -o worker
 
 FROM mcr.microsoft.com/dotnet/runtime:5.0-alpine as worker
-RUN adduser --disabled-password --home /app --gecos '' app && chown -R app /app
-USER app
 WORKDIR /app
 COPY --from=build /build/worker ./
-ENV DOTNET_RUNNING_IN_CONTAINER=true
 ENTRYPOINT ["dotnet", "ScoreSys.Worker.dll"]
